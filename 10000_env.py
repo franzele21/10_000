@@ -26,6 +26,7 @@ class Env10000(Env):
         return self.state
     
     def step(self, action):
+        
         match action:
             case 1:
                 self.state[0] += self.state[1]
@@ -34,9 +35,15 @@ class Env10000(Env):
             case 0:
                 # results of the dice throw
                 dices = np.random.randint(1, 6, self.state[2])
-                dices = list(map(lambda x: max(x%2, x%3, x), dices))
-                print(dices)
-
+                unique, counts = np.unique(dices, return_counts=True)
+                dice_result = dict(zip(unique, counts))
+                
+                # loosing case 
+                if dice_result[1] == 0 and dice_result[5] == 0:
+                    self.state = self.base_state.copy()
+                else:   # winning case
+                    self.state[1] += dice_result[1]*100 + dice_result[5]*50
+        return None # il faut définir une fonction de retour
     def pprint_state(self):
         return {k:v.item() for k,v in zip(["Total points", "Round points", "Remaining dice number"], self.state)}
                 
