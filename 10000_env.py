@@ -25,9 +25,11 @@ class Env10000(Env):
         return self.state
     
     def step(self, action):
+        prev_state = self.state.copy()
         
         match action:
             case 1:
+                #bank the round points
                 self.state[0] += self.state[1]
                 self.state[1] = 0
                 self.state[2] = self.max_dice_nb
@@ -43,7 +45,47 @@ class Env10000(Env):
                 else:   # winning case
                     self.state[1] += dice_result.get(1, 0)*100 + dice_result.get(5, 0)*50
                     self.state[2] -= dice_result.get(1, 0) + dice_result.get(5, 0)
-        return None # il faut définir une fonction de retour
+            
+        reward = self.return_function(prev_state, action)
+
+        # termination when objective reached or exceeded
+        terminated = bool(self.state[0] >= self.objectiv)
+        truncated = False
+        info = {}    
+            
+        return self.state.copy(), float(reward), terminated, truncated, info
+
+    def return_function(self, previous_state, action):
+        """
+        previous_state: the state BEFORE the action (tuple/array: total, round, remaining)
+        action: either KEEP_GAINS or THROW_DICE
+
+        Returns a float reward.
+        - KEEP_GAINS: reward == points banked into total (cur_total - prev_total)
+        - THROW_DICE:
+            * if the throw caused a loss (round points lost), reward = -lost_round_points
+            * otherwise reward = incremental round points gained by the throw
+        """
+        prev_total, prev_round, prev_remain = previous_state
+        cur_total, cur_round, cur_remain = self.state
+
+        reward = 0.0
+
+        if action == KEEP_GAINS:
+            # reward the agent for banking round points into the total
+            reward = float(cur_total - prev_total)
+
+        elif action == THROW_DICE:
+            # losing throw: round points reset and agent lost the accumulated round points
+            # detect loss by seeing round dropped to 0 while previous round > 0
+            if cur_round == 0 and prev_round > 0 and cur_total <= prev_total:
+                reward = float(-prev_round)
+            else:
+                # reward the incremental round points from this throw
+                reward = float(cur_round - prev_round)
+
+        return reward
+    
     def pprint_state(self):
         return {k:v.item() for k,v in zip(["Total points", "Round points", "Remaining dice number"], self.state)}
                 
@@ -51,7 +93,19 @@ class Env10000(Env):
         return str(self.pprint_state())
     
 if __name__ == "__main__":
+    
     env = Env10000()
-    env.reset()
-    print(env)
-    print(env.step(THROW_DICE))
+    obs = env.reset()
+    terminated = False
+
+    print("Manual play: 't' = throw, 'k' = keep, 'q' = quit")
+    while not terminated:
+        print("State:", env.pprint_state())
+        cmd = input("action (t/k/q): ").strip().lower()
+        if cmd == "q":
+            break
+        action = THROW_DICE if cmd == "t" else KEEP_GAINS
+        obs, reward, terminated, truncated, info = env.step(action)
+        print(f" -> reward: {reward}, terminated: {terminated}")
+    if terminated:
+        print("Final:", env.pprint_state())
