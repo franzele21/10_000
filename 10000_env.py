@@ -27,14 +27,6 @@ class Env10000(Env):
 
         self.observation_space = spaces.Dict(spaces_)
         self.action_space = spaces.Discrete(2)
-
-        spaces_ = {
-            "Total points": spaces.Box(low=0, high=point_objectiv, shape=(1,), dtype=np.int32),
-            "Round points": spaces.Box(low=0, high=point_objectiv, shape=(1,), dtype=np.int32),
-            "Remaining dice number" : spaces.Box(low=0, high=max_dice_nb, shape=(1,), dtype=np.int32)
-        }
-
-        self.observation_space = spaces.Dict(spaces_)
     
     def reset(self, *, seed = None, return_info = False, options = None):
         self.state = self.base_state.copy()
