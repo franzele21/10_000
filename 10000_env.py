@@ -38,11 +38,11 @@ class Env10000(Env):
                 dice_result = dict(zip(unique, counts))
                 
                 # loosing case 
-                print(dice_result[5] if 5 in dice_result else 0)
-                if dice_result[1] == 0 and dice_result[5] == 0:
+                if not dice_result.get(1, 0) and not dice_result.get(5, 0):
                     self.state = self.base_state.copy()
                 else:   # winning case
-                    self.state[1] += dice_result[1]*100 + dice_result[5]*50
+                    self.state[1] += dice_result.get(1, 0)*100 + dice_result.get(5, 0)*50
+                    self.state[2] -= dice_result.get(1, 0) + dice_result.get(5, 0)
         return None # il faut définir une fonction de retour
     def pprint_state(self):
         return {k:v.item() for k,v in zip(["Total points", "Round points", "Remaining dice number"], self.state)}
