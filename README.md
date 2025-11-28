@@ -1,0 +1,1 @@
+# Gymnasium environment of the 10000 game
