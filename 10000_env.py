@@ -1,9 +1,9 @@
 import gymnasium as gym
-from gym import Env
-from gym import spaces
+from gymnasium import Env
+from gymnasium import spaces
 import random
 import numpy as np
-
+from stable_baselines3.common.env_checker import check_env
 DICE_NB = 5
 THROW_DICE = 0
 KEEP_GAINS = 1
