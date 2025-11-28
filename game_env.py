@@ -18,52 +18,61 @@ class Env10000(Env):
         self.base_state = np.array([0, 0, max_dice_nb], dtype=np.int32)
         self.state = self.base_state.copy()
         
-        # observation space: total points, round points, nb of remaining dices
-        spaces_ = {
-            "Total points": spaces.Box(low=0, high=point_objectiv, shape=(1,), dtype=np.int32),
-            "Round points": spaces.Box(low=0, high=point_objectiv, shape=(1,), dtype=np.int32),
-            "Remaining dice number" : spaces.Box(low=0, high=max_dice_nb, shape=(1,), dtype=np.int32)
-        }
+        # simpler and easier if we want to try multiple models
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(3,), dtype=np.float32)
 
-        self.observation_space = spaces.Dict(spaces_)
         self.action_space = spaces.Discrete(2)
     
-    def reset(self, *, seed = None, return_info = False, options = None):
+    def _state_to_obs(self):
+        """Flatten + normalize state to float32 array matching observation_space."""
+        t = float(self.state[0]) / float(max(1, self.objectiv))
+        r = float(self.state[1]) / float(max(1, self.objectiv))
+        rem = float(self.state[2]) / float(max(1, self.max_dice_nb))
+        return np.array([t, r, rem], dtype=np.float32)
+    
+    def reset(self, *, seed = None, options = None):
         self.state = self.base_state.copy()
-        
-        return self.state
+        obs = self._state_to_obs()
+        info = {}
+        return obs, info
     
     def step(self, action):
         prev_state = self.state.copy()
-        
-        match action:
-            case 1:
-                #bank the round points
-                self.state[0] += self.state[1]
-                self.state[1] = 0
-                self.state[2] = self.max_dice_nb
-            case 0:
-                # results of the dice throw
-                dices = np.random.randint(1, 6, self.state[2])
-                unique, counts = np.unique(dices, return_counts=True)
-                dice_result = dict(zip(unique, counts))
-                
-                # loosing case 
-                if not dice_result.get(1, 0) and not dice_result.get(5, 0):
-                    self.state = self.base_state.copy()
-                else:   # winning case
-                    self.state[1] += dice_result.get(1, 0)*100 + dice_result.get(5, 0)*50
-                    self.state[2] -= dice_result.get(1, 0) + dice_result.get(5, 0)
-            
+
+        # convert actions in case they come as numpy/int
+        action = int(action)
+
+        if action == KEEP_GAINS:
+            # bank the round points
+            self.state[0] += self.state[1]
+            self.state[1] = 0
+            self.state[2] = self.max_dice_nb
+
+        elif action == THROW_DICE:
+            # results of the dice throw
+            dices = np.random.randint(1, 6, self.state[2])
+            unique, counts = np.unique(dices, return_counts=True)
+            dice_result = dict(zip(unique, counts))
+
+            # losing case
+            if not dice_result.get(1, 0) and not dice_result.get(5, 0):
+                self.state = self.base_state.copy()
+            else:   # winning case
+                self.state[1] += dice_result.get(1, 0)*100 + dice_result.get(5, 0)*50
+                self.state[2] -= dice_result.get(1, 0) + dice_result.get(5, 0)
+        else:
+            raise ValueError(f"Invalid action: {action}")
+
         reward = self.return_function(prev_state, action)
 
         # termination when objective reached or exceeded
         terminated = bool(self.state[0] >= self.objectiv)
         truncated = False
-        info = {}    
-            
-        return self.state.copy(), float(reward), terminated, truncated, info
+        info = {}
 
+        return self._state_to_obs(), float(reward), terminated, truncated, info
+    
+    
     def return_function(self, previous_state, action):
         """
         previous_state: the state BEFORE the action (tuple/array: total, round, remaining)
@@ -92,7 +101,6 @@ class Env10000(Env):
             else:
                 # reward the incremental round points from this throw
                 reward = float(cur_round - prev_round)
-
         return reward
     
     def pprint_state(self):

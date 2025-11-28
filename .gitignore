@@ -1,2 +1,5 @@
 .vscode
-sandbox.py
+__pycache__/
+tb_logs/
+*.zip
+*.pkl
