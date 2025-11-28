@@ -3,6 +3,7 @@ from gymnasium import Env
 from gymnasium import spaces
 import random
 import numpy as np
+
 DICE_NB = 5
 THROW_DICE = 0
 KEEP_GAINS = 1
@@ -14,10 +15,18 @@ class Env10000(Env):
         self.objectiv = point_objectiv
 
         # total points, round points, nb of remaining dices
-        self.base_state = np.array([0, 0, max_dice_nb])
+        self.base_state = np.array([0, 0, max_dice_nb], dtype=np.int32)
         self.state = self.base_state.copy()
 
         self.action_space = spaces.Discrete(2)
+
+        spaces_ = {
+            "Total points": spaces.Box(low=0, high=point_objectiv, shape=(1,), dtype=np.int32),
+            "Round points": spaces.Box(low=0, high=point_objectiv, shape=(1,), dtype=np.int32),
+            "Remaining dice number" : spaces.Box(low=0, high=max_dice_nb, shape=(1,), dtype=np.int32)
+        }
+
+        self.observation_space = spaces.Dict(spaces_)
     
     def reset(self, *, seed = None, return_info = False, options = None):
         self.state = self.base_state.copy()
