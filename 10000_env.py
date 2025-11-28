@@ -39,7 +39,7 @@ class Env10000(Env):
                 dice_result = dict(zip(unique, counts))
                 
                 # loosing case 
-                if dice_result[1] == 0 and dice_result[5] == 0:
+                if not dice_result.get(1, 0) and not dice_result.get(5, 0):
                     self.state = self.base_state.copy()
                 else:   # winning case
                     self.state[1] += dice_result[1]*100 + dice_result[5]*50
