@@ -3,7 +3,6 @@ from gymnasium import Env
 from gymnasium import spaces
 import random
 import numpy as np
-from stable_baselines3.common.env_checker import check_env
 DICE_NB = 5
 THROW_DICE = 0
 KEEP_GAINS = 1
@@ -39,6 +38,7 @@ class Env10000(Env):
                 dice_result = dict(zip(unique, counts))
                 
                 # loosing case 
+                print(dice_result[5] if 5 in dice_result else 0)
                 if dice_result[1] == 0 and dice_result[5] == 0:
                     self.state = self.base_state.copy()
                 else:   # winning case
@@ -49,3 +49,9 @@ class Env10000(Env):
                 
     def __repr__(self):
         return str(self.pprint_state())
+    
+if __name__ == "__main__":
+    env = Env10000()
+    env.reset()
+    print(env)
+    print(env.step(THROW_DICE))
